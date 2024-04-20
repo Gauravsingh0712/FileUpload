@@ -1,4 +1,6 @@
 const File = require('../models/File');
+const mongoose = require('mongoose');
+const cloudinary = require('cloudinary').v2;
 
 //localfileupload -> handler function
 exports.localFileUpload = async (req, res) => {
@@ -26,27 +28,61 @@ exports.localFileUpload = async (req, res) => {
     }
 }
 
+async function uploadFileToCloudinary(file, folder) {
+    const options = { folder }
+    return await cloudinary.uploader.upload(file.tempFilePath,)
+}
+function isFileTypeSupported(type, supportedTypes) {
+    return supportedTypes.includes(type);
+}
 //Image upload handler function
+//image upload ka hadnler
 exports.imageUpload = async (req, res) => {
     try {
-        //fetch data from file
+        //data fetch
         const { name, tags, email } = req.body;
         console.log(name, tags, email);
 
-        const File = req.files.imageFile
-        console.log(File);
+        const file = req.files.imageFile;
+        console.log(file);
 
-        //validation
-        const supportedTypes = ["jpeg", "jpg", "png"];
-        const fileType = File.name.split(".")[1].toLowerCase();
+        //Validation
+        const supportedTypes = ["jpg", "jpeg", "png"];
+        const fileType = file.name.split('.')[1].toLowerCase();
+        console.log("File Type:", fileType);
 
-        if (!supportedTypes.includes(fileType)) {
+        if (!isFileTypeSupported(fileType, supportedTypes)) {
             return res.status(400).json({
-                message: "file type not supported",
-                success: false
+                success: false,
+                message: 'File format not supported',
             })
         }
-    } catch (error) {
+
+        //file format supported hai
+        console.log("Uploading to Codehelp");
+        const response = await uploadFileToCloudinary(file, "Codehelp");
+        console.log(response);
+
+        //db me entry save krni h
+        const fileData = await File.create({
+            name,
+            tags,
+            email,
+            imageUrl: response.secure_url,
+        });
+
+        res.json({
+            success: true,
+            imageUrl: response.secure_url,
+            message: 'Image Successfully Uploaded',
+        })
+    }
+    catch (error) {
+        console.error(error);
+        res.status(400).json({
+            success: false,
+            message: 'Something went wrong',
+        });
 
     }
 }

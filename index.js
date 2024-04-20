@@ -8,7 +8,10 @@ const Port = process.env.PORT || 3000;
 
 //middlewares
 app.use(express.json());
-app.use(fileupload());
+app.use(fileupload({
+    useTempFiles: true,
+    tempFileDir: '/tmp/'
+}));
 
 //connect to database
 const db = require('./config/database');
